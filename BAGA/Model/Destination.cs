@@ -12,6 +12,7 @@ namespace Model
     {
         public int DestinationId { get; set; }
         [Required]
+        [MaxLength(200)]
         public string Name { get; set; }
         public string Country { get; set; }
         [MaxLength(500)]
@@ -20,5 +21,7 @@ namespace Model
         [Column(TypeName="image")]
         public byte[] Photo { get; set; }
         public List<Lodging> Lodgings { get; set; }
+        public string TravelWarnings { get; set; }
+        //public string ClimateInfo { get; set; }
     }
 }
