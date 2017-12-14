@@ -50,8 +50,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BreakAwayContext.cs" />
-    <Compile Include="DropCreateBreakAwayWithSeedData.cs" />
-    <Compile Include="PromptForDropCreateDatabaseWhenModelChanges.cs" />
+    <Compile Include="InitializeBagaDatabaseWithSeedData.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

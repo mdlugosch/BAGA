@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Model
 {
@@ -15,8 +16,19 @@ namespace Model
         [MinLength(10)]
         public string Name { get; set; }
         public string Owner { get; set; }
-        public bool IsResort { get; set; }
+        public decimal MilesFromNearestAirport { get; set; }
 
+        [Column("destination_id")]
+        public int DestinationId { get; set; }
         public Destination Destination { get; set; }
+        public List<InternetSpecial> InternetSpecials { get; set; }
+        public Nullable<int> PrimaryContactId { get; set; }
+        [InverseProperty("PrimaryContactFor")]
+        [ForeignKey("PrimaryContactId")]
+        public Person PrimaryContact { get; set; }
+        public Nullable<int> SecondaryContactId { get; set; }
+        [InverseProperty("SecondaryContactFor")]
+        [ForeignKey("SecondaryContactId")]
+        public Person SecondaryContact { get; set; }
     }
 }

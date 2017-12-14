@@ -11,7 +11,7 @@ namespace Model
     public class Activity
     {
         public int ActivityId { get; set; }
-        [MaxLength(50)]
+        [Required, MaxLength(50)]
         public string Name { get; set; }
         public List<Trip> Trips { get; set; }
     }
