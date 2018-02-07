@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 using Model;
 using DataAccess;
 using System.Data.Entity;
+using System.Data.Entity.Infrastructure;
+using System.Data.Entity.Validation;
 
 namespace BreakAwayConsole
 {
@@ -233,7 +235,7 @@ namespace BreakAwayConsole
 
                 context.Destinations.Load();
             }
-                
+
         }
 
         private static void TestLazyLoading()
@@ -653,14 +655,239 @@ namespace BreakAwayConsole
 
                 context.SaveChanges();
             }
+        }
 
+        public static void SaveDestinationGraph(Destination destination)
+        {
+            using (var context = new BreakAwayContext())
+            {
+                context.Destinations.Add(destination);
 
+                foreach(var entry in context.ChangeTracker.Entries<IObjectWithState>())
+                {
+                    IObjectWithState stateInfo = entry.Entity;
+                    entry.State = ConverterState(stateInfo.State);
+                }
+
+                context.SaveChanges();
+            }
+        }
+
+        public static EntityState ConverterState(State state)
+        {
+            switch(state)
+            {
+                case State.Added:
+                    return EntityState.Added;
+
+                case State.Modified:
+                    return EntityState.Modified;
+
+                case State.Deleted:
+                    return EntityState.Deleted;
+
+                default:
+                    return EntityState.Unchanged;
+            }
+        }
+
+        private static void TestSaveDestinationGraph()
+        {
+            Destination canyon;
+            using (var context = new BreakAwayContext())
+            {
+                canyon = (from d in context.Destinations.Include(d => d.Lodgings)
+                          where d.Name == "Grand Canyon"
+                          select d).Single();
+            }
+
+            canyon.TravelWarnings = "Carry enough water";
+            canyon.State = State.Modified;
+
+            var firstLodging = canyon.Lodgings.First();
+            firstLodging.Name = "New Name Holiday Park";
+            firstLodging.State = State.Modified;
+
+            var secondLodging = canyon.Lodgings.Last();
+            secondLodging.State = State.Deleted;
+
+            canyon.Lodgings.Add(new Lodging
+            {
+                Name = "Big Canyon Lodge",
+                State = State.Added
+            });
+
+            ApplyChanges(canyon);
+        }
+
+        private static void ApplyChanges<TEntity>(TEntity root) where TEntity : class, IObjectWithState
+        {
+            using (var context = new BreakAwayContext())
+            {
+                context.Set<TEntity>().Add(root);
+
+                CheckForEntitiesWithoutStateInterface(context);
+
+                foreach(var entry in context.ChangeTracker
+                    .Entries<IObjectWithState>()) 
+                {
+                    IObjectWithState stateInfo = entry.Entity;
+                    if(stateInfo.State == State.Modified)
+                    {
+                        entry.State = EntityState.Unchanged;
+                        foreach(var property in stateInfo.ModifiedProperties)
+                        {
+                            entry.Property(property).IsModified = true;
+                        }
+                    }
+                    else
+                    {
+                        entry.State = ConverterState(stateInfo.State);
+                    }
+                    entry.State = ConverterState(stateInfo.State);
+                }
+
+                context.SaveChanges();
+            }
+        }
+
+        private static void CheckForEntitiesWithoutStateInterface(BreakAwayContext context)
+        {
+            var entitiesWithoutState =
+                from e in context.ChangeTracker.Entries()
+                where !(e.Entity is IObjectWithState)
+                select e;
+
+            if(entitiesWithoutState.Any())
+            {
+                throw new NotSupportedException("All entities must implement IObjectWithState");
+            }
+        }
+
+        private static void PrintState()
+        {
+            using(var context = new BreakAwayContext())
+            {
+                var canyon = (from d in context.Destinations
+                              where d.Name == "Grand Canyon"
+                              select d).Single();
+
+                DbEntityEntry<Destination> entry = context.Entry(canyon);
+
+                Console.WriteLine("Before Edit: {0}", entry.State);
+                canyon.TravelWarnings = "Take lots of water.";
+                Console.WriteLine("After Edit: {0}", entry.State);
+            }
+        }
+
+        private static void PrintChangeTrackingInfo(BreakAwayContext context,
+            Lodging entity)
+        {
+            var entry = context.Entry(entity);
+
+            if (entry.State == EntityState.Deleted)
+            {
+                Console.WriteLine("\nCurrent Values:");
+                PrintPropertyValues(entry.CurrentValues);
+            }
+
+            if (entry.State == EntityState.Added)
+            {
+                Console.WriteLine("\nOriginal Values:");
+                PrintPropertyValues(entry.OriginalValues);
+
+                Console.WriteLine("\nDatabase Values:");
+                PrintPropertyValues(entry.GetDatabaseValues());
+            }
+        }
+
+        private static void PrintPropertyValues(DbPropertyValues values)
+        {
+            foreach(var propertyName in values.PropertyNames)
+            {
+                Console.WriteLine(" - {0}: {1}", propertyName, values[propertyName]);
+            }
+        }
+
+        private static void PrintLodgingInfo()
+        {
+            using (var context = new BreakAwayContext())
+            {
+                var hotel = (from d in context.Lodgings
+                             where d.Name == "Grand Hotel"
+                             select d).Single();
+
+                hotel.Name = "Super Grand Hotel";
+
+                context.Database.ExecuteSqlCommand(@"UPDATE Lodgings
+                                                    Set Name = 'Not-So-Grand Hotel'
+                                                    WHERE Name = 'Grand Hotel'");
+
+                PrintChangeTrackingInfo(context, hotel);
+            }
+        }
+
+        private static void ValidateNewPerson()
+        {
+            var person = new Person
+            {
+                FirstName = "Julie",
+                LastName = "Lerman-Flynn",
+                Photo = new PersonPhoto { Photo = new Byte[] { 0 } }
+            };
+
+            using (var context = new BreakAwayContext())
+            {
+                if(context.Entry(person).GetValidationResult().IsValid)
+                {
+                    Console.WriteLine("Person is Valid");
+                }
+                else
+                {
+                    Console.WriteLine("Person is Invalid");
+                }
+            }
+        }
+
+        // Auslesen der Validationsmeldungen die durch eine Entity produziert werden.
+        private static void ConsoleValidationResult(object entity)
+        {
+            using(var context = new BreakAwayContext())
+            {
+                var result = context.Entry(entity).GetValidationResult();
+                foreach(DbValidationError error in result.ValidationErrors)
+                {
+                    Console.WriteLine(error.ErrorMessage);
+                }
+            }
+        }
+
+        public static void ValidationDestination()
+        {
+            ConsoleValidationResult(new Destination
+            {
+                Name = "New York City",
+                Country = "U.S.A",
+                Description = "Big city! :)"
+            });
+        }
+
+        private static void ValidateTrip()
+        {
+            ConsoleValidationResult(new Trip
+            {
+                EndDate = DateTime.Now,
+                StartDate = DateTime.Now.AddDays(2),
+                CostUSD = 500.00M,
+                Description="You should enjoy this 500 dollar trip",
+                Destination = new Destination { Name = "Somewhere Fun" }
+            });
         }
 
         static void Main(string[] args)
         {
             Database.SetInitializer(new InitializeBagaDatabaseWithSeedData());
- 
+
             using(var context = new BreakAwayContext())
             {
                 try
@@ -680,7 +907,7 @@ namespace BreakAwayConsole
                 }
             }
 
-            TestUpdateDestination();
+            ValidateTrip();
             Console.ReadKey();
         }
     }

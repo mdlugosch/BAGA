@@ -25,6 +25,7 @@ namespace Model
         [ConcurrencyCheck]
         public int SocialSecurityNumber { get; set; }
         public string FirstName { get; set; }
+        [MaxLength(10)]
         public string LastName { get; set; }
         public Address Address { get; set; }
         public PersonalInfo Info { get; set; }

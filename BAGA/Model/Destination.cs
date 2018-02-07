@@ -1,15 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Validation;
 
 namespace Model
 {
     [Table("Locations", Schema = "baga")]
-    public class Destination
+    public class Destination : IObjectWithState
     {
         public Destination()
         {
@@ -23,6 +20,7 @@ namespace Model
         public virtual string Name { get; set; }
         public virtual string Country { get; set; }
         [MaxLength(500)]
+        [CustomValidation(typeof(BusinessValidations), "DescriptionRules")]
         public virtual string Description { get; set; }
         [Column(TypeName = "image")]
         public virtual byte[] Photo { get; set; }
@@ -32,5 +30,9 @@ namespace Model
         // virtual 
         //public List<Lodging> Lodgings { get; set; }
         public virtual ICollection<Lodging> Lodgings { get; set; }
+
+        public State State { get; set; }
+
+        public List<string> ModifiedProperties { get; set; }
     }
-}
+    }

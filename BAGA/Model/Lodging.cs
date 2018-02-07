@@ -8,7 +8,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Model
 {
-    public class Lodging
+    public class Lodging : IObjectWithState
     {
         public int LodgingId { get; set; }
         [Required]
@@ -30,5 +30,8 @@ namespace Model
         [InverseProperty("SecondaryContactFor")]
         [ForeignKey("SecondaryContactId")]
         public Person SecondaryContact { get; set; }
+
+        public State State { get; set; }
+        public List<string> ModifiedProperties { get; set; }
     }
 }
