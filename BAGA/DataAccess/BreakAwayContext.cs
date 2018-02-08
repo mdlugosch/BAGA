@@ -24,6 +24,7 @@ namespace DataAccess
             };
         }
 
+        // Normal Context
         public DbSet<Destination> Destinations { get; set; }
         public DbSet<Lodging> Lodgings { get; set; }
         public DbSet<Trip> Trips { get; set; }
@@ -31,5 +32,6 @@ namespace DataAccess
         public DbSet<Reservation> Reservations { get; set; }
         public DbSet<Payment> Payments { get; set; }
         public DbSet<Activity> Activities { get; set; }
+
     }
 }

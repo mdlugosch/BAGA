@@ -886,6 +886,8 @@ namespace BreakAwayConsole
 
         static void Main(string[] args)
         {
+
+            #if false
             Database.SetInitializer(new InitializeBagaDatabaseWithSeedData());
 
             using(var context = new BreakAwayContext())
@@ -906,8 +908,8 @@ namespace BreakAwayConsole
                     Console.WriteLine(ex.Message);
                 }
             }
+            #endif
 
-            ValidateTrip();
             Console.ReadKey();
         }
     }
